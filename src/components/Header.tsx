@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ConnectButton } from "@mysten/dapp-kit";
 import { Ticket } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function Header() {
   return (
