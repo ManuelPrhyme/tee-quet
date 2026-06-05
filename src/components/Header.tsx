@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ConnectButton } from "@mysten/dapp-kit";
 import { Ticket } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function Header() {
   return (
@@ -20,7 +21,10 @@ export function Header() {
             Host an event
           </Link>
         </nav>
-        <ConnectButton />
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <ConnectButton />
+        </div>
       </div>
     </header>
   );
