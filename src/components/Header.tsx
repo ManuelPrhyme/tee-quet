@@ -21,7 +21,10 @@ export function Header() {
             Host an event
           </Link>
         </nav>
-        <ConnectButton />
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <ConnectButton />
+        </div>
       </div>
     </header>
   );
