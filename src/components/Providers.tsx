@@ -1,10 +1,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { SuiClientProvider, WalletProvider } from "@mysten/dapp-kit";
-import { getFullnodeUrl } from "@mysten/sui/client";
+import { getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc";
 import "@mysten/dapp-kit/dist/index.css";
 
 const networks = {
-  testnet: { url: getFullnodeUrl("testnet") },
+  testnet: { url: getJsonRpcFullnodeUrl("testnet"), network: "testnet" as const },
 };
 
 export function SuiProviders({ children }: { children: ReactNode }) {

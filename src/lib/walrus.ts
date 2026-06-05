@@ -1,12 +1,15 @@
 import { WalrusClient } from "@mysten/walrus";
-import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
+import { SuiJsonRpcClient, getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc";
 import type { Signer } from "@mysten/sui/cryptography";
 
 let cached: WalrusClient | null = null;
 
 export function getWalrusClient(): WalrusClient {
   if (cached) return cached;
-  const suiClient = new SuiClient({ url: getFullnodeUrl("testnet") });
+  const suiClient = new SuiJsonRpcClient({
+    url: getJsonRpcFullnodeUrl("testnet"),
+    network: "testnet",
+  });
   cached = new WalrusClient({ network: "testnet", suiClient });
   return cached;
 }

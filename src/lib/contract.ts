@@ -1,5 +1,5 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { SuiClient } from "@mysten/sui/client";
+import { SuiJsonRpcClient as SuiClient } from "@mysten/sui/jsonRpc";
 import {
   PACKAGE_ID,
   PLATFORM_CONFIG_ID,
