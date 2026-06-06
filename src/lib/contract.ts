@@ -96,6 +96,22 @@ export function buildAddTicketTx(eventId: string, blobId: string) {
   return tx;
 }
 
+export function buildBatchAddTicketsTx(eventId: string, blobIds: string[]) {
+  const tx = new Transaction();
+  const enc = new TextEncoder();
+  for (const blobId of blobIds) {
+    tx.moveCall({
+      target: `${PACKAGE_ID}::tee_queter::add_ticket`,
+      typeArguments: [USDC_COIN_TYPE],
+      arguments: [
+        tx.object(eventId),
+        tx.pure.vector("u8", Array.from(enc.encode(blobId))),
+      ],
+    });
+  }
+  return tx;
+}
+
 export async function buildBuyTicketTx(
   client: SuiClient,
   sender: string,

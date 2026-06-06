@@ -58,11 +58,8 @@ export function EventDetailPage({ eventId, navigate: _navigate }: EventDetailPag
     if (!account || !event) return;
     const signer: WalrusSigner = {
       toSuiAddress: () => account.address,
-      signAndExecuteTransaction: async ({ transaction, client: suiClient }) => {
-        const result = await signAndExecute(
-          { transaction: transaction as never },
-          { context: { client: suiClient } as never },
-        );
+      signAndExecuteTransaction: async ({ transaction }) => {
+        const result = await signAndExecute({ transaction: transaction as never });
         return { Transaction: result };
       },
     };

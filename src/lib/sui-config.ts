@@ -14,6 +14,6 @@ export const EVENT_CREATION_FEE_USDC = 5; // 5 USDC
 
 export const WALRUS_AGGREGATOR = "https://aggregator.walrus-testnet.walrus.space";
 
-export const isContractConfigured = () => PACKAGE_ID !== "0x0" && PLATFORM_CONFIG_ID !== "0x0";
+export const isContractConfigured = () => PACKAGE_ID.length > 4 && PLATFORM_CONFIG_ID.length > 4;
 
 
