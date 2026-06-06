@@ -107,13 +107,47 @@ export function CreatePage({ navigate }: CreatePageProps) {
         coverBlobId,
         priceUsdc: price,
       });
-      const createRes = await signAndExecute({ transaction: tx });
+      const createRes = await signAndExecute(
+        { transaction: tx },
+        { showEffects: true, showObjectChanges: true },
+      );
 
-      // Extract the new event object ID from the created objects
-      const eventId = (createRes as { effects?: { created?: { reference?: { objectId: string }; owner?: unknown }[] } })
+      console.log("createRes", JSON.stringify(createRes, null, 2));
+
+      // Try effects.created first, then objectChanges
+      type CreatedObj = { reference?: { objectId: string }; owner?: unknown };
+      type ObjChange = { type?: string; objectId?: string; owner?: unknown };
+
+      const fromEffects = (createRes as { effects?: { created?: CreatedObj[] } })
         ?.effects?.created
         ?.find((o) => typeof o.owner === "object" && o.owner !== null && "Shared" in o.owner)
         ?.reference?.objectId;
+
+      const fromChanges = (createRes as { objectChanges?: ObjChange[] })
+        ?.objectChanges
+        ?.find((o) => o.type === "created" && typeof o.owner === "object" && o.owner !== null && "Shared" in o.owner)
+        ?.objectId;
+
+      // Fallback: fetch from chain using digest
+      let eventId = fromEffects ?? fromChanges;
+      if (!eventId) {
+        const digest = (createRes as { digest?: string })?.digest;
+        if (digest) {
+          await client.waitForTransaction({ digest });
+          const txBlock = await client.getTransactionBlock({
+            digest,
+            options: { showEffects: true, showObjectChanges: true },
+          });
+          eventId = (txBlock as { effects?: { created?: CreatedObj[] } })
+            ?.effects?.created
+            ?.find((o) => typeof o.owner === "object" && o.owner !== null && "Shared" in o.owner)
+            ?.reference?.objectId
+            ?? (txBlock as { objectChanges?: ObjChange[] })
+              ?.objectChanges
+              ?.find((o) => o.type === "created" && typeof o.owner === "object" && o.owner !== null && "Shared" in o.owner)
+              ?.objectId;
+        }
+      }
 
       if (!eventId) throw new Error("Could not find created event object ID in transaction result");
       toast.success(`Event created — minting ${ticketCount} tickets…`);
