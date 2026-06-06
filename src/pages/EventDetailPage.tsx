@@ -1,47 +1,40 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   useCurrentAccount,
-  useCurrentWallet,
   useSignAndExecuteTransaction,
   useSuiClient,
 } from "@mysten/dapp-kit";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Plus, Ticket } from "lucide-react";
-import {
-  buildAddTicketTx,
-  buildBuyTicketTx,
-  fetchEvent,
-} from "@/lib/contract";
+import { buildAddTicketTx, buildBuyTicketTx, fetchEvent } from "@/lib/contract";
 import { uploadImage, walrusImageUrl } from "@/lib/walrus";
+import type { EventSummary } from "@/lib/contract";
+import type { WalrusSigner } from "@/lib/walrus";
 
-export const Route = createFileRoute("/events/$eventId")({
-  head: ({ params }) => ({
-    meta: [
-      { title: `Event · Tee-queter` },
-      {
-        name: "description",
-        content: `Buy a ticket for event ${params.eventId} on Tee-queter.`,
-      },
-    ],
-  }),
-  component: EventDetail,
-});
+interface EventDetailPageProps {
+  eventId: string;
+  navigate: (to: string) => void;
+}
 
-function EventDetail() {
-  const { eventId } = Route.useParams();
+export function EventDetailPage({ eventId, navigate: _navigate }: EventDetailPageProps) {
   const client = useSuiClient();
   const account = useCurrentAccount();
-  const wallet = useCurrentWallet();
-  const qc = useQueryClient();
   const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
   const [busy, setBusy] = useState<string | null>(null);
+  const [event, setEvent] = useState<EventSummary | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const { data: event, isLoading } = useQuery({
-    queryKey: ["event", eventId],
-    queryFn: () => fetchEvent(client as never, eventId),
-  });
+  const loadEvent = () => {
+    setIsLoading(true);
+    fetchEvent(client as never, eventId)
+      .then(setEvent)
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  };
+
+  useEffect(() => {
+    loadEvent();
+  }, [client, eventId]);
 
   const isCreator = !!account && event?.creator === account.address;
 
@@ -49,15 +42,10 @@ function EventDetail() {
     if (!account || !event) return;
     try {
       setBusy("buy");
-      const tx = await buildBuyTicketTx(
-        client as never,
-        account.address,
-        event.id,
-        event.price,
-      );
+      const tx = await buildBuyTicketTx(client as never, account.address, event.id, event.price);
       await signAndExecute({ transaction: tx });
       toast.success("Ticket purchased — check your wallet");
-      qc.invalidateQueries({ queryKey: ["event", eventId] });
+      loadEvent();
     } catch (err) {
       console.error(err);
       toast.error(err instanceof Error ? err.message : "Failed");
@@ -68,8 +56,16 @@ function EventDetail() {
 
   async function addTicket(file: File) {
     if (!account || !event) return;
-    const signer = (wallet.currentWallet as unknown as { signer?: unknown })?.signer;
-    if (!signer) return toast.error("Wallet doesn't expose a signer for Walrus uploads");
+    const signer: WalrusSigner = {
+      toSuiAddress: () => account.address,
+      signAndExecuteTransaction: async ({ transaction, client: suiClient }) => {
+        const result = await signAndExecute(
+          { transaction: transaction as never },
+          { context: { client: suiClient } as never },
+        );
+        return { Transaction: result };
+      },
+    };
     try {
       setBusy("add");
       toast.message("Uploading ticket art to Walrus…");
@@ -77,7 +73,7 @@ function EventDetail() {
       const tx = buildAddTicketTx(event.id, blobId);
       await signAndExecute({ transaction: tx });
       toast.success("Ticket added");
-      qc.invalidateQueries({ queryKey: ["event", eventId] });
+      loadEvent();
     } catch (err) {
       console.error(err);
       toast.error(err instanceof Error ? err.message : "Failed");
@@ -98,21 +94,16 @@ function EventDetail() {
     return (
       <div className="mx-auto max-w-5xl px-6 py-24 text-center">
         <h1 className="font-display text-3xl font-bold">Event not found</h1>
-        <Link to="/" className="mt-4 inline-block text-accent">
-          ← Back to drops
-        </Link>
+        <a href="/" className="mt-4 inline-block text-accent">← Back to drops</a>
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-12">
-      <Link
-        to="/"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
+      <a href="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> All drops
-      </Link>
+      </a>
 
       <div className="mt-6 grid gap-8 md:grid-cols-[1.1fr_1fr]">
         <div className="paper-card overflow-hidden">
@@ -127,18 +118,15 @@ function EventDetail() {
 
         <div className="space-y-5">
           <span className="chip">{event.availableCount} tickets left</span>
-          <h1 className="font-display text-4xl font-bold leading-tight">
-            {event.name}
-          </h1>
+          <h1 className="font-display text-4xl font-bold leading-tight">{event.name}</h1>
           <p className="text-muted-foreground">{event.description}</p>
 
           <div className="paper-card flex items-center justify-between p-5">
             <div>
-              <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                Price
-              </div>
+              <div className="text-xs uppercase tracking-widest text-muted-foreground">Price</div>
               <div className="font-display text-3xl font-bold">
-                {event.price} <span className="text-base font-medium text-muted-foreground">USDC</span>
+                {event.price}{" "}
+                <span className="text-base font-medium text-muted-foreground">USDC</span>
               </div>
             </div>
             <button
@@ -151,11 +139,7 @@ function EventDetail() {
               ) : (
                 <Ticket className="h-4 w-4" />
               )}
-              {!account
-                ? "Connect wallet"
-                : event.availableCount === 0
-                  ? "Sold out"
-                  : "Claim ticket"}
+              {!account ? "Connect wallet" : event.availableCount === 0 ? "Sold out" : "Claim ticket"}
             </button>
           </div>
 

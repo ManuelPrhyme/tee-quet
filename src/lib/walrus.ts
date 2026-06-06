@@ -1,6 +1,5 @@
 import { WalrusClient } from "@mysten/walrus";
 import { SuiJsonRpcClient, getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc";
-import type { Signer } from "@mysten/sui/cryptography";
 
 let cached: WalrusClient | null = null;
 
@@ -14,18 +13,24 @@ export function getWalrusClient(): WalrusClient {
   return cached;
 }
 
+// The interface WalrusClient.#executeTransaction actually needs
+export interface WalrusSigner {
+  toSuiAddress: () => string;
+  signAndExecuteTransaction: (args: { transaction: unknown; client: unknown }) => Promise<unknown>;
+}
+
 export async function uploadImage(
   file: File,
-  signer: Signer,
-  epochs = 5,
+  signer: WalrusSigner,
+  epochs = 2,
 ): Promise<string> {
   const buf = new Uint8Array(await file.arrayBuffer());
   const client = getWalrusClient();
   const { blobId } = await client.writeBlob({
     blob: buf,
-    deletable: false,
+    deletable: true,
     epochs,
-    signer,
+    signer: signer as never,
   });
   return blobId;
 }
