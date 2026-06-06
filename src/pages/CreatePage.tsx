@@ -32,14 +32,12 @@ export function CreatePage({ navigate }: CreatePageProps) {
   const [ticketCount, setTicketCount] = useState(10);
   const [cover, setCover] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const [ticketArt, setTicketArt] = useState<File | null>(null);
-  const [ticketArtPreview, setTicketArtPreview] = useState<string | null>(null);
+  const [ticketArt, setTicketArt] = useState<File | null>(null); const [ticketArtPreview, setTicketArtPreview] = useState<string | null>(null);
 
   const isBusy = busy !== "idle";
 
   const onPickCover = (f: File | null) => {
-    setCover(f);
-    setCoverPreview(f ? URL.createObjectURL(f) : null);
+    setCover(f);    setCoverPreview(f ? URL.createObjectURL(f) : null);
   };
 
   const onPickTicketArt = (f: File | null) => {
