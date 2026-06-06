@@ -1,7 +1,8 @@
 # Project Summary
 **Tee_Quet** is a decentralized ticketing solution that utilizes **Sui Move contracts** to manage event creation, ticket ownership, and secure payments.  
 By leveraging **Walrus**, the platform ensures that ticket metadata and images are stored as verifiable, tamper-proof blobs, making it impossible for tickets to be faked or manipulated.  
-The platform automates the transfer of ownership from creators to users upon purchase, providing a transparent and verifiable record on-chain.
+The platform automates the transfer of ownership from creators to users upon purchase, providing a transparent and verifiable record on-chain.  
+Additionally, the solution interacts with the **SUI Testnet** using **Tatum RPC URLs**, enabling seamless communication with the blockchain during development and testing.
 
 ---
 
@@ -32,3 +33,4 @@ The platform automates the transfer of ownership from creators to users upon pur
 - **Smart Contract Language**: Sui Move (access control and payment logic)  
 - **Storage Layer**: Walrus (decentralized storage of event/ticket blobs)  
 - **Currency Support**: Sui, WAL, and USDC  
+- **RPC Layer**: Tatum RPC URLs (for interacting with the SUI Testnet)  
