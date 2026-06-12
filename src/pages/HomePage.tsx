@@ -29,9 +29,9 @@ export function HomePage({ navigate }: HomePageProps) {
     <div className="mx-auto max-w-6xl px-6 pb-24">
       <section className="relative grid gap-10 py-16 md:grid-cols-[1.1fr_1fr] md:py-24">
         <div className="space-y-6">
-          <span className="chip">
+          {/* <span className="chip">
             <Sparkles className="h-3.5 w-3.5" /> Sui Testnet · Walrus storage
-          </span>
+          </span> */}
           <h1 className="font-display text-5xl font-bold leading-[1.05] tracking-tight md:text-7xl">
             Tickets that travel
             <span className="text-accent">.</span>
@@ -154,13 +154,9 @@ export function HomePage({ navigate }: HomePageProps) {
               href={`/events/${e.id}`}
               className="paper-card group block overflow-hidden transition hover:-translate-y-1"
             >
-              <div className="aspect-[4/3] overflow-hidden bg-muted">
+              <div className="relative aspect-[4/3] overflow-hidden bg-muted">
                 {e.coverBlobId ? (
-                  <img
-                    src={walrusImageUrl(e.coverBlobId)}
-                    alt={e.name}
-                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                  />
+                  <EventImage src={walrusImageUrl(e.coverBlobId)} alt={e.name} />
                 ) : (
                   <div className="h-full w-full bg-gradient-to-br from-[color:var(--mint)] to-[color:var(--butter)]" />
                 )}
@@ -178,5 +174,20 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </section>
     </div>
+  );
+}
+
+function EventImage({ src, alt }: { src: string; alt: string }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <>
+      {!loaded && <div className="absolute inset-0 animate-pulse bg-muted" />}
+      <img
+        src={src}
+        alt={alt}
+        onLoad={() => setLoaded(true)}
+        className={`h-full w-full object-cover transition duration-500 group-hover:scale-105 ${loaded ? "opacity-100" : "opacity-0"}`}
+      />
+    </>
   );
 }

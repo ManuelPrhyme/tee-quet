@@ -8,6 +8,15 @@ import {
   EVENT_CREATION_FEE_USDC,
 } from "./sui-config";
 
+const dec = new TextDecoder();
+const fromBytes = (v: unknown): string => {
+  if (typeof v === "string") {
+    try { return dec.decode(Uint8Array.from(atob(v), (c) => c.charCodeAt(0))); } catch { return v; }
+  }
+  if (Array.isArray(v)) return dec.decode(Uint8Array.from(v));
+  return String(v);
+};
+
 export const toBase = (amount: number) =>
   BigInt(Math.round(amount * 10 ** USDC_DECIMALS));
 
@@ -161,23 +170,23 @@ export async function fetchAllEvents(client: SuiClient): Promise<EventSummary[]>
     if (!c || c.dataType !== "moveObject") continue;
     const f = c.fields as {
       creator: string;
-      name: string;
-      description: string;
-      cover_blob_id: string;
+      name: unknown;
+      description: unknown;
+      cover_blob_id: unknown;
       price: string;
-      available_blobs: string[];
+      available_blobs: unknown[];
       sold_count: string;
     };
     out.push({
       id: o.data!.objectId,
       creator: f.creator,
-      name: f.name,
-      description: f.description,
-      coverBlobId: f.cover_blob_id,
+      name: f.name as string,
+      description: f.description as string,
+      coverBlobId: f.cover_blob_id as string,
       price: fromBase(f.price),
       availableCount: f.available_blobs.length,
       soldCount: Number(f.sold_count),
-      availableBlobs: f.available_blobs,
+      availableBlobs: (f.available_blobs as string[]),
     });
   }
   return out;
@@ -195,22 +204,22 @@ export async function fetchEvent(
   if (!c || c.dataType !== "moveObject") return null;
   const f = c.fields as {
     creator: string;
-    name: string;
-    description: string;
-    cover_blob_id: string;
+    name: unknown;
+    description: unknown;
+    cover_blob_id: unknown;
     price: string;
-    available_blobs: string[];
+    available_blobs: unknown[];
     sold_count: string;
   };
   return {
     id: o.data!.objectId,
     creator: f.creator,
-    name: f.name,
-    description: f.description,
-    coverBlobId: f.cover_blob_id,
+    name: f.name as string,
+    description: f.description as string,
+    coverBlobId: f.cover_blob_id as string,
     price: fromBase(f.price),
     availableCount: f.available_blobs.length,
     soldCount: Number(f.sold_count),
-    availableBlobs: f.available_blobs,
+    availableBlobs: f.available_blobs as string[],
   };
 }

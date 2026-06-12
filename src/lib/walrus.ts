@@ -22,7 +22,7 @@ export interface WalrusSigner {
 export async function uploadImage(
   file: File,
   signer: WalrusSigner,
-  epochs = 2,
+  epochs = 5,
 ): Promise<string> {
   const buf = new Uint8Array(await file.arrayBuffer());
   const client = getWalrusClient();
@@ -37,4 +37,7 @@ export async function uploadImage(
 
 export function walrusImageUrl(blobId: string): string {
   return `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${blobId}`;
+  
 }
+
+
