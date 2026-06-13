@@ -5,7 +5,7 @@ import {
   useSuiClient,
 } from "@mysten/dapp-kit";
 import { toast } from "sonner";
-import { Upload, Loader2, Ticket } from "lucide-react";
+import { Upload, Loader2, Ticket, CalendarDays } from "lucide-react";
 import { buildCreateEventTx, buildBatchAddTicketsTx } from "@/lib/contract";
 import { uploadImage } from "@/lib/walrus";
 import { EVENT_CREATION_FEE_USDC, isContractConfigured, USDC_COIN_TYPE, USDC_DECIMALS } from "@/lib/sui-config";
@@ -13,6 +13,20 @@ import type { WalrusSigner } from "@/lib/walrus";
 
 const WAL_COIN_TYPE = "0x8270feb7375eee355e64fdb69c50abb6b5f9393a722883c1cf45f8e26048810a::wal::WAL";
 const WAL_DECIMALS = 9;
+
+function daysUntil(dateStr: string): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(dateStr);
+  target.setHours(0, 0, 0, 0);
+  return Math.max(1, Math.ceil((target.getTime() - today.getTime()) / 86_400_000));
+}
+
+function minDate(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split("T")[0];
+}
 
 interface CreatePageProps {
   navigate: (to: string) => void;
@@ -30,6 +44,7 @@ export function CreatePage({ navigate }: CreatePageProps) {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState(10);
   const [ticketCount, setTicketCount] = useState(10);
+  const [eventDate, setEventDate] = useState("");
   const [cover, setCover] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [ticketArt, setTicketArt] = useState<File | null>(null);
@@ -61,9 +76,12 @@ export function CreatePage({ navigate }: CreatePageProps) {
     if (!account) return toast.error("Connect your Sui wallet first");
     if (!cover) return toast.error("Upload a cover image");
     if (!ticketArt) return toast.error("Upload a ticket art image");
+    if (!eventDate) return toast.error("Set an event date");
     if (ticketCount < 1) return toast.error("Ticket count must be at least 1");
     if (!isContractConfigured())
       return toast.error("Contract not configured — see src/lib/sui-config.ts");
+
+    const epochs = daysUntil(eventDate) + 1; // +1 day buffer past event date
 
     // Check USDC and WAL balances before proceeding
     const [usdcBal, walBal] = await Promise.all([
@@ -91,7 +109,7 @@ export function CreatePage({ navigate }: CreatePageProps) {
       // 1. Upload cover blob
       setBusy("uploading-cover");
       toast.message("Uploading cover to Walrus…");
-      const coverBlobId = await uploadImage(cover, signer, 2);
+      const coverBlobId = await uploadImage(cover, signer, epochs);
       toast.success("Cover stored on Walrus");
 
       // 2. Create event on-chain (1 wallet prompt)
@@ -141,7 +159,7 @@ export function CreatePage({ navigate }: CreatePageProps) {
       setBusy({ uploadedBlobs: 0, total: ticketCount });
       const blobIds = await Promise.all(
         Array.from({ length: ticketCount }, () =>
-          uploadImage(ticketArt, signer, 5).then((id) => {
+          uploadImage(ticketArt, signer, epochs).then((id) => {
             uploaded += 1;
             setBusy({ uploadedBlobs: uploaded, total: ticketCount });
             return id;
@@ -221,6 +239,29 @@ export function CreatePage({ navigate }: CreatePageProps) {
           </Field>
         </div>
 
+        <Field label="Event date">
+          <div className="space-y-1.5">
+            <div className="relative">
+              <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="date"
+                required
+                min={minDate()}
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+                className="input pl-9"
+              />
+            </div>
+            {eventDate && (
+              <p className="text-xs text-muted-foreground">
+                Blobs stored for{" "}
+                <span className="font-semibold text-foreground">{daysUntil(eventDate) + 1} epochs</span>
+                {" · "}{daysUntil(eventDate) + 1} days (1 epoch = 1 day)
+              </p>
+            )}
+          </div>
+        </Field>
+
         <Field label="Cover image">
           <FilePicker
             file={cover}
@@ -285,6 +326,7 @@ export function CreatePage({ navigate }: CreatePageProps) {
         }
         .input:focus { border-color: var(--color-ring); box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-ring) 25%, transparent); }
         .input::placeholder { color: var(--color-muted-foreground); opacity: 0.45; }
+        .input.pl-9 { padding-left: 2.25rem; }
       `}</style>
     </div>
   );
