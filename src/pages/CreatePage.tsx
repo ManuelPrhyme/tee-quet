@@ -91,7 +91,7 @@ export function CreatePage({ navigate }: CreatePageProps) {
       // 1. Upload cover blob
       setBusy("uploading-cover");
       toast.message("Uploading cover to Walrus…");
-      const coverBlobId = await uploadImage(cover, signer, 5);
+      const coverBlobId = await uploadImage(cover, signer, 2);
       toast.success("Cover stored on Walrus");
 
       // 2. Create event on-chain (1 wallet prompt)
